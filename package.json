@@ -1,0 +1,21 @@
+{
+  "name": "unvendor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "fixture:seed": "tsx --env-file-if-exists=.env fixtures/supabase/scripts/seed-cloud.ts"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.117.2",
+    "@types/node": "^26.6.4",
+    "supabase": "^2.119.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

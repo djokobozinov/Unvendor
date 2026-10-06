@@ -20,6 +20,10 @@ Getting into Supabase is easy, getting out is not:
 
 Right now leaving means a dump, some one-off scripts and rewriting access control by hand. Unvendor turns that into something you can run and check.
 
+## Why not self-host Supabase?
+
+That changes where Supabase runs, not what you depend on. You still run its services and stay on its schemas. Unvendor is for moving onto plain Postgres, your own identity provider and any S3 store, each replaceable on its own.
+
 ## What it does
 
 1. **Inventory:** scans the project and lists what has to move.
@@ -56,6 +60,8 @@ npx unvendor verify
 ## Contributing
 
 If you've moved off Supabase, or tried and gave up, open an issue and describe what broke.
+
+To test against a real project, see `fixtures/supabase/`.
 
 ## License
 
