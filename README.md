@@ -2,7 +2,7 @@
 
 **Leave your Backend-as-a-Service without losing your users, data or access rules.**
 
-Unvendor is an open source CLI that moves a Supabase project to:
+Unvendor is an open source CLI that moves a [Supabase](https://supabase.com) project to:
 
 - PostgreSQL
 - Auth.js or Keycloak for auth
@@ -60,3 +60,5 @@ If you've moved off Supabase, or tried and gave up, open an issue and describe w
 ## License
 
 Apache-2.0. See `LICENSE`.
+
+Unvendor is not affiliated with or endorsed by Supabase.
