@@ -19,7 +19,7 @@ A migration tool is only as good as the cases it is checked against. Supabase is
 - RLS policies that use `auth.uid()`, `auth.jwt()` or `auth.role()` in ways you suspect are hard to translate.
 - Auth setups with OAuth identities, unconfirmed emails or MFA factors.
 - Storage bucket policies that depend on database state.
-- Client code that relies on `supabase-js` behaviour, which the compatibility shim would need to cover.
+- Client code that relies on `supabase-js` behaviour, which a later client compatibility shim would need to cover.
 
 Strip anything private before sharing. A minimal SQL snippet that reproduces the shape of the problem is enough.
 
@@ -39,7 +39,11 @@ Rules the tool must follow, and that every change must respect:
 
 ## Roadmap
 
-Work is organised in milestones M1 to M5, one per component. See the [roadmap in README.md](README.md#roadmap).
+Work is organised in milestones M1 to M5, one per component: inventory and source adapter interface, auth migration, RLS translation, storage migration, verification and release. See the [roadmap in README.md](README.md#roadmap) and the [milestone issues](https://github.com/djokobozinov/unvendor/issues).
+
+## Generative AI
+
+You may use generative AI tools when contributing. Say so in the commit message or pull request, review the output yourself, and make sure it can be published under Apache-2.0. Unedited AI output is not accepted.
 
 ## Mirrors
 

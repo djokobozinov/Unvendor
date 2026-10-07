@@ -7,7 +7,7 @@ const codeberg = "https://codeberg.org/gjokob/unvendor";
 // Keep in sync with README.md.
 const tagline = "An exit toolkit for Backend-as-a-Service platforms, starting with Supabase.";
 const summary =
-  "Unvendor is an open source toolkit for converting a Backend-as-a-Service deployment into standard, self-hostable components: plain PostgreSQL, OIDC-based auth and S3-compatible storage. The goal is to do this without a full rewrite of the app.";
+  "Unvendor is an open source toolkit for converting a Backend-as-a-Service deployment into standard, self-hostable components: plain PostgreSQL, any OIDC identity provider and S3-compatible storage. The goal is to do this without a full rewrite of the app.";
 
 const problems = [
   {
@@ -26,39 +26,45 @@ const problems = [
 
 const mappings = [
   { from: "Supabase Postgres", to: "PostgreSQL", note: "Schema, data and RLS policies" },
-  { from: "Supabase Auth", to: "OIDC provider", note: "Keycloak, Authentik, Zitadel" },
+  { from: "Supabase Auth", to: "OIDC provider", note: "Keycloak first; Authentik, Zitadel via SCIM 2.0" },
   { from: "Supabase Storage", to: "S3-compatible storage", note: "MinIO, Garage, Ceph" },
 ];
 
 const components = [
   {
-    name: "Schema, data and RLS exporter",
-    body: "Exports schema and data to plain PostgreSQL. RLS policies that use Supabase-specific functions are rewritten against a small shim schema; anything that can't be converted is listed in the report.",
+    name: "Inventory and source adapter interface",
+    body: "Reads schemas, roles, RLS policies that use auth.*, buckets, functions and secrets, and reports everything that has to move. Platform-specific reading sits behind an adapter interface so other platforms can be added later.",
   },
   {
     name: "Auth migration",
-    body: "Moves users and identities to an OIDC provider (Keycloak, Authentik, Zitadel), keeping user IDs and existing password hashes where the provider supports it, so users don't have to reset their passwords.",
+    body: "Exports users, identities, password hashes and MFA factors. Imports into Keycloak through its native user import, keeping user IDs and bcrypt hashes so users don't have to reset their passwords. A SCIM 2.0 export covers other OIDC providers such as Authentik and Zitadel.",
   },
   {
-    name: "Storage export",
-    body: "Copies buckets and objects to any S3-compatible backend (MinIO, Garage, Ceph) and translates the access rules.",
+    name: "RLS translation",
+    body: "Rewrites policies that call auth.uid(), auth.jwt() and auth.role() into portable SQL on top of a small shim schema. Anything that can't be converted is listed in the report. Every rewrite gets a negative test, and differential tests compare what each user can see on source and target.",
   },
   {
-    name: "Client compatibility shim",
-    body: "Lets an existing app keep running against the new components during migration, so client code can be ported step by step instead of all at once.",
+    name: "Storage migration",
+    body: "Copies buckets and objects to any S3-compatible backend (MinIO, Garage, Ceph) and translates the access rules into rules the new backend enforces.",
   },
   {
-    name: "Source adapter interface",
-    body: "Separates platform-specific reading from the rest of the pipeline, so other platforms such as Firebase and Appwrite can be added as sources.",
+    name: "Verification and release",
+    body: "An end-to-end harness runs the whole migration on a copy and compares row counts, logins and access. Documentation, reproducible packaging on npm, and fixes from a security review.",
   },
 ];
 
+const later = [
+  "Client compatibility shim for supabase-js, so an app keeps running while client code is ported step by step",
+  "Edge Functions, Realtime subscriptions and database webhooks",
+  "Further source adapters: Firebase, Appwrite and others",
+];
+
 const roadmap = [
-  "Schema, data and RLS exporter → PostgreSQL",
-  "Auth migration → OIDC providers (Keycloak, Authentik, Zitadel)",
-  "Storage export → S3-compatible storage (MinIO, Garage, Ceph)",
-  "Client compatibility shim",
-  "Source adapter interface (Firebase, Appwrite and others later)",
+  "Inventory and source adapter interface",
+  "Auth migration → any OIDC provider (Keycloak first; SCIM 2.0 export for others)",
+  "RLS translation → plain PostgreSQL with shim schema",
+  "Storage migration → S3-compatible storage (MinIO, Garage, Ceph)",
+  "Verification and release",
 ];
 
 const h2 = "mb-6 text-[clamp(1.5rem,3vw,2rem)] font-bold";
@@ -175,6 +181,17 @@ const section = "mx-auto mt-22 max-w-240 px-4";
         per-user folder policies, and a seed script. It is the source project used to develop and test
         the components.
       </p>
+      <h3 class="mt-10 mb-2 text-lg font-semibold">After the migration</h3>
+      <p class="max-w-[70ch] text-muted">
+        Something has to set the claims that the translated policies read. The app's server side, or
+        PostgREST, validates the OIDC token and sets them as a transaction-local setting before each
+        query; the shim's auth.uid(), auth.jwt() and auth.role() read from that setting. Apps that reach
+        the database only through supabase-js need a server-side layer first; the inventory flags this.
+      </p>
+      <h3 class="mt-10 mb-2 text-lg font-semibold">Later</h3>
+      <ul class="max-w-[70ch] list-disc pl-5 text-muted">
+        {later.map((l) => <li>{l}</li>)}
+      </ul>
     </section>
 
     <section class={section} aria-labelledby="roadmap">

@@ -2,7 +2,7 @@
 
 **An exit toolkit for Backend-as-a-Service platforms, starting with Supabase.**
 
-Unvendor is an open source toolkit for converting a Backend-as-a-Service deployment into standard, self-hostable components: plain PostgreSQL, OIDC-based auth and S3-compatible storage. The goal is to do this without a full rewrite of the app. Supabase is the first source platform and the reference implementation; others are planned through a source adapter interface.
+Unvendor is an open source toolkit for converting a Backend-as-a-Service deployment into standard, self-hostable components: plain PostgreSQL, any OIDC identity provider and S3-compatible storage. The goal is to do this without a full rewrite of the app. Supabase is the first source platform and the reference implementation; others are planned through a source adapter interface.
 
 > **Status: early development.** No component is usable yet. See [What it does](#what-it-does) and the [roadmap](#roadmap).
 
@@ -26,17 +26,29 @@ Each component moves one part of the platform onto a standard replacement that c
 
 | # | Component | Target | Status |
 |---|-----------|--------|--------|
-| 1 | Schema, data and RLS exporter | PostgreSQL | Planned |
-| 2 | Auth migration | OIDC providers (Keycloak, Authentik, Zitadel) | Planned |
-| 3 | Storage export | S3-compatible storage (MinIO, Garage, Ceph) | Planned |
-| 4 | Client compatibility shim | Existing app clients | Planned |
-| 5 | Source adapter interface | Future sources (Firebase, Appwrite, ...) | Planned |
+| 1 | Inventory and source adapter interface | Report of everything that has to move | Planned |
+| 2 | Auth migration | Any OIDC provider (Keycloak first; Authentik, Zitadel and others via SCIM 2.0 export) | Planned |
+| 3 | RLS translation | Plain PostgreSQL with a small shim schema | Planned |
+| 4 | Storage migration | S3-compatible storage (MinIO, Garage, Ceph) | Planned |
+| 5 | Verification and release | End-to-end test harness, docs, npm package | Planned |
 
-1. **Schema, data and RLS exporter.** Exports schema and data to plain PostgreSQL. RLS policies that use Supabase-specific functions are rewritten against a small shim schema; anything that can't be converted is listed in the report.
-2. **Auth migration.** Moves users and identities to an OIDC provider, keeping user IDs and existing password hashes where the provider supports it, so users don't have to reset their passwords.
-3. **Storage export.** Copies buckets and objects to any S3-compatible backend and translates the access rules.
-4. **Client compatibility shim.** Lets an existing app keep running against the new components during migration, so client code can be ported step by step instead of all at once.
-5. **Source adapter interface.** Separates platform-specific reading from the rest of the pipeline, so other platforms can be added as sources.
+1. **Inventory and source adapter interface.** Reads schemas, roles, RLS policies that use `auth.*`, buckets, functions and secrets from the source project and reports what has to move. Platform-specific reading sits behind an adapter interface, so other platforms can be added as sources later.
+2. **Auth migration.** Exports users, identities, password hashes, email confirmation state and MFA factors. Imports into Keycloak through its native user import, keeping user IDs and bcrypt hashes so users don't have to reset their passwords. A SCIM 2.0 export covers other OIDC providers such as Authentik and Zitadel.
+3. **RLS translation.** Rewrites policies that call `auth.uid()`, `auth.jwt()` and `auth.role()` into portable SQL on top of a small shim schema. Anything that can't be converted is listed in the report. Every rewritten policy gets a negative test, and differential tests compare the rows visible to each user on source and target.
+4. **Storage migration.** Copies buckets and objects to any S3-compatible backend and translates the access rules into rules the new backend enforces, with access checks per bucket and per user.
+5. **Verification and release.** An end-to-end harness runs the whole migration on a copy and compares row counts, logins and access. Documentation, reproducible packaging on npm, and fixes from a security review.
+
+### Runtime model after migration
+
+Once the platform's API layer is gone, something has to set the JWT claims that the translated policies read. Unvendor documents and tests one model: the app's server side, or [PostgREST](https://postgrest.org/) (which is independent of Supabase), validates the OIDC token and sets the claims as a transaction-local setting before each query. The shim's `auth.uid()`, `auth.jwt()` and `auth.role()` read from that setting. Apps that reach the database only through `supabase-js` need a server-side layer first; the inventory flags this.
+
+### Later
+
+Not part of the first five components. The inventory reports them so a team knows what remains to do by hand.
+
+- Client compatibility shim, so an app using `supabase-js` can keep running against the new components while client code is ported step by step.
+- Edge Functions, Realtime subscriptions and database webhooks.
+- Further source adapters: Firebase, Appwrite and others.
 
 ### Design rules
 
@@ -59,17 +71,23 @@ There is no runnable CLI yet. To set up the test fixture against a hosted Supaba
 
 ## Roadmap
 
-- [ ] M1: Schema, data and RLS exporter → PostgreSQL
-- [ ] M2: Auth migration → OIDC providers (Keycloak, Authentik, Zitadel)
-- [ ] M3: Storage export → S3-compatible storage (MinIO, Garage, Ceph)
-- [ ] M4: Client compatibility shim
-- [ ] M5: Source adapter interface (Firebase, Appwrite and others later)
+One milestone per component, tracked as [issues on GitHub](https://github.com/djokobozinov/unvendor/issues).
+
+- [ ] M1: Inventory and source adapter interface
+- [ ] M2: Auth migration → any OIDC provider (Keycloak first; SCIM 2.0 export for others)
+- [ ] M3: RLS translation → plain PostgreSQL with shim schema
+- [ ] M4: Storage migration → S3-compatible storage (MinIO, Garage, Ceph)
+- [ ] M5: Verification and release
 
 ## Contributing
 
 If you've moved off a Backend-as-a-Service platform, or tried and gave up, open an issue and describe what broke. Real migration cases shape the roadmap and the test suite.
 
 The project is written in TypeScript. See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+## Use of generative AI
+
+Parts of the documentation and code in this repository are written with help from a generative AI assistant (Claude). Commits with AI-assisted content say so in the commit message. A human reviews every change, is responsible for its correctness, and makes sure it can be published under Apache-2.0.
 
 ## License
 
