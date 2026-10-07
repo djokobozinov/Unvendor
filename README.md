@@ -2,6 +2,8 @@
 
 **An exit toolkit for Backend-as-a-Service platforms, starting with Supabase.**
 
+Website: [unvendor.dev](https://unvendor.dev)
+
 Unvendor is an open source toolkit for converting a Backend-as-a-Service deployment into standard, self-hostable components: plain PostgreSQL, any OIDC identity provider and S3-compatible storage. The goal is to do this without a full rewrite of the app. Supabase is the first source platform and the reference implementation; others are planned through a source adapter interface.
 
 > **Status: early development.** No component is usable yet. See [What it does](#what-it-does) and the [roadmap](#roadmap).
