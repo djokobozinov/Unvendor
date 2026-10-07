@@ -1,0 +1,213 @@
+---
+import Base from "../layouts/Base.astro";
+
+const repo = "https://github.com/djokobozinov/unvendor";
+
+const targets = [
+  { from: "Supabase Postgres", to: "PostgreSQL" },
+  { from: "Supabase Auth", to: "Auth.js or Keycloak" },
+  { from: "Supabase Storage", to: "Any S3 store (MinIO, Garage, ...)" },
+];
+
+const problems = [
+  {
+    title: "RLS is tied to Supabase",
+    body: "Policies call auth.uid(), auth.jwt() and auth.role(), which only exist in Supabase.",
+  },
+  {
+    title: "Users live in auth.users",
+    body: "Your tables reference their IDs, so you can't just recreate accounts somewhere else.",
+  },
+  {
+    title: "Storage rules are database policies",
+    body: "The object store knows nothing about them, so copying files isn't enough.",
+  },
+];
+
+const steps = [
+  {
+    name: "Inventory",
+    body: "Scans the project and lists what has to move.",
+  },
+  {
+    name: "Auth",
+    body: "Moves users, identities and bcrypt hashes and keeps the user IDs, so nobody has to reset a password.",
+  },
+  {
+    name: "RLS",
+    body: "Rewrites Supabase-specific policies into plain SQL using a small shim schema. Whatever it can't convert goes into the report.",
+  },
+  {
+    name: "Storage",
+    body: "Copies buckets and objects and translates the access rules.",
+  },
+  {
+    name: "Verify",
+    body: "Compares source and target: row counts, logins, and RLS checks that should be denied.",
+  },
+];
+
+const guarantees = [
+  "It never writes to your Supabase project.",
+  "You can run it against a copy as many times as you want before the real cutover.",
+  "Every change it makes ends up in the report.",
+  "Sources are adapters, so Firebase or Appwrite can be added later.",
+];
+
+const roadmap = [
+  "Inventory CLI",
+  "Auth migration (Auth.js, Keycloak)",
+  "RLS translation",
+  "Storage migration",
+  "Verification, docs, packaging",
+];
+---
+
+<Base
+  title="Unvendor: leave Supabase without losing anything"
+  description="Open source CLI that moves a Supabase project to plain PostgreSQL, Auth.js or Keycloak, and any S3-compatible store, keeping your users, data and access rules."
+>
+  <header class="mx-auto flex max-w-240 items-center justify-between px-4 pt-6">
+    <a class="font-mono text-lg font-bold text-text no-underline" href="/">unvendor</a>
+    <a class="text-muted no-underline hover:text-text" href={repo}>GitHub</a>
+  </header>
+
+  <main>
+    <section class="mx-auto mt-18 max-w-240 px-4">
+      <p class="inline-block rounded-full bg-accent-soft px-2.5 py-1 font-mono text-[0.8rem] text-accent">
+        Early development · nothing works yet
+      </p>
+      <h1 class="my-4 max-w-[20ch] text-[clamp(2rem,5vw,3.25rem)] font-bold">
+        Leave your Backend-as-a-Service without losing your users, data or access rules.
+      </h1>
+      <p class="max-w-[52ch] text-xl text-muted">
+        Unvendor is an open source CLI that moves a <a href="https://supabase.com">Supabase</a> project
+        onto infrastructure you control, one piece at a time.
+      </p>
+      <div class="mt-8 mb-12 flex flex-wrap gap-3">
+        <a
+          class="rounded-lg border border-text bg-text px-4.5 py-2.5 font-medium text-bg no-underline hover:opacity-90"
+          href={repo}>Star on GitHub</a
+        >
+        <a
+          class="rounded-lg border border-border px-4.5 py-2.5 font-medium text-text no-underline hover:border-muted"
+          href="#roadmap">See the roadmap</a
+        >
+      </div>
+
+      <ul class="divide-y divide-border rounded-xl border border-border bg-surface font-mono text-sm">
+        {
+          targets.map((t) => (
+            <li class="grid gap-0.5 px-5 py-3.5 sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-4">
+              <span class="text-muted">{t.from}</span>
+              <span class="hidden text-accent sm:inline" aria-hidden="true">
+                →
+              </span>
+              <span class="text-accent">
+                <span class="sm:hidden" aria-hidden="true">
+                  →{" "}
+                </span>
+                {t.to}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section class="mx-auto mt-22 max-w-240 px-4">
+      <h2 class="mb-6 text-[clamp(1.5rem,3vw,2rem)] font-bold">
+        Getting into Supabase is easy. Getting out is not.
+      </h2>
+      <div class="mb-6 grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
+        {
+          problems.map((p) => (
+            <article class="rounded-xl border border-border bg-surface p-5">
+              <h3 class="mb-1.5 text-lg font-semibold">{p.title}</h3>
+              <p class="text-muted">{p.body}</p>
+            </article>
+          ))
+        }
+      </div>
+      <p class="text-muted">
+        Right now leaving means a dump, some one-off scripts and rewriting access control by hand.
+        Unvendor turns that into something you can run and check.
+      </p>
+    </section>
+
+    <section class="mx-auto mt-22 max-w-240 px-4">
+      <h2 class="mb-6 text-[clamp(1.5rem,3vw,2rem)] font-bold">What it does</h2>
+      <ol class="grid gap-6">
+        {
+          steps.map((s, i) => (
+            <li class="flex gap-4">
+              <span class="grid size-8 flex-none place-items-center rounded-full bg-accent-soft font-mono text-sm text-accent">
+                {i + 1}
+              </span>
+              <div>
+                <h3 class="mb-1.5 text-lg font-semibold">{s.name}</h3>
+                <p class="text-muted">{s.body}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <section class="mx-auto mt-22 max-w-240 px-4">
+      <h2 class="mb-6 text-[clamp(1.5rem,3vw,2rem)] font-bold">How it will work</h2>
+      <pre
+        class="mb-8 overflow-x-auto rounded-xl border border-border bg-terminal p-5 font-mono text-sm leading-[1.8] text-terminal-text"><code><span class="text-prompt select-none">$</span> npx unvendor inventory --source "$SUPABASE_DB_URL"
+<span class="text-prompt select-none">$</span> npx unvendor migrate auth --target keycloak
+<span class="text-prompt select-none">$</span> npx unvendor verify</code></pre>
+      <ul class="grid gap-2.5">
+        {
+          guarantees.map((g) => (
+            <li class="relative pl-7 before:absolute before:left-0 before:font-bold before:text-accent before:content-['✓']">
+              {g}
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section class="mx-auto mt-22 max-w-240 px-4">
+      <h2 class="mb-6 text-[clamp(1.5rem,3vw,2rem)] font-bold">Why not self-host Supabase?</h2>
+      <p>
+        That changes where Supabase runs, not what you depend on. You still run its services and stay
+        on its schemas. Unvendor is for moving onto plain Postgres, your own identity provider and any
+        S3 store, each replaceable on its own.
+      </p>
+    </section>
+
+    <section class="mx-auto mt-22 max-w-240 px-4" id="roadmap">
+      <h2 class="mb-6 text-[clamp(1.5rem,3vw,2rem)] font-bold">Roadmap</h2>
+      <ol class="border-l-2 border-border">
+        {
+          roadmap.map((r, i) => (
+            <li class="py-2 pl-5">
+              <span class="mr-2.5 font-mono text-sm text-muted">M{i + 1}</span>
+              {r}
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <section class="mx-4 mt-22 rounded-2xl border border-border bg-surface px-6 py-10 text-center lg:mx-auto lg:max-w-232">
+      <h2 class="mb-6 text-[clamp(1.5rem,3vw,2rem)] font-bold">Moved off Supabase, or tried and gave up?</h2>
+      <p class="mb-4 text-muted">
+        Open an issue and describe what broke. That's the most useful thing you can do right now.
+      </p>
+      <a
+        class="inline-block rounded-lg border border-text bg-text px-4.5 py-2.5 font-medium text-bg no-underline hover:opacity-90"
+        href={`${repo}/issues/new`}>Open an issue</a
+      >
+    </section>
+  </main>
+
+  <footer class="mx-auto mt-22 max-w-240 border-t border-border px-4 pt-6 pb-12 text-muted">
+    <p class="mb-1">Apache-2.0 · <a href={repo}>Source</a></p>
+    <p class="text-sm">Unvendor is not affiliated with or endorsed by Supabase.</p>
+  </footer>
+</Base>
