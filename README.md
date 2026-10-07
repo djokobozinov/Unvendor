@@ -73,11 +73,16 @@ There is no runnable CLI yet. To set up the test fixture against a hosted Supaba
 
 One milestone per component, tracked as [issues on GitHub](https://github.com/djokobozinov/unvendor/issues).
 
-- [ ] M1: Inventory and source adapter interface
-- [ ] M2: Auth migration → any OIDC provider (Keycloak first; SCIM 2.0 export for others)
-- [ ] M3: RLS translation → plain PostgreSQL with shim schema
-- [ ] M4: Storage migration → S3-compatible storage (MinIO, Garage, Ceph)
-- [ ] M5: Verification and release
+- [ ] **M1: Inventory.** Source adapter interface; Supabase adapter reading schemas, roles, `auth.*` RLS policies, buckets, functions and secrets; Markdown/JSON report.
+  - Done when: `unvendor inventory` runs against `fixtures/supabase` and reports everything that has to move.
+- [ ] **M2: Auth migration.** Users, identities, bcrypt hashes and MFA to Keycloak, keeping UUIDs and hashes; SCIM 2.0 export for Authentik and Zitadel.
+  - Done when: fixture users log in to Keycloak with their original passwords.
+- [ ] **M3: RLS translation.** Shim for `auth.uid()`, `auth.jwt()` and `auth.role()` on transaction-local claims; policy rewriter; negative and differential tests.
+  - Done when: every fixture policy is rewritten or reported, and the tests pass on plain PostgreSQL.
+- [ ] **M4: Storage migration.** Buckets and objects to S3-compatible storage (MinIO, Garage, Ceph); storage policies translated into rules the backend enforces.
+  - Done when: every fixture object is copied and the per-bucket, per-user access checks pass on the target.
+- [ ] **M5: Verification and release.** End-to-end harness on a copy comparing row counts, logins and access; documentation; reproducible npm package; security review fixes.
+  - Done when: the full migration of `fixtures/supabase` passes the harness and the package is published on npm.
 
 ## Contributing
 
