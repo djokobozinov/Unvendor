@@ -1,22 +1,22 @@
 ---
 import Base from "../layouts/Base.astro";
 
-const repo = "https://github.com/djokobozinov/unvendor";
+const github = "https://github.com/djokobozinov/unvendor";
+const codeberg = "https://codeberg.org/gjokob/unvendor";
 
-const targets = [
-  { from: "Supabase Postgres", to: "PostgreSQL" },
-  { from: "Supabase Auth", to: "Auth.js or Keycloak" },
-  { from: "Supabase Storage", to: "Any S3 store (MinIO, Garage, ...)" },
-];
+// Keep in sync with README.md.
+const tagline = "An exit toolkit for Backend-as-a-Service platforms, starting with Supabase.";
+const summary =
+  "Unvendor is an open source toolkit for converting a Backend-as-a-Service deployment into standard, self-hostable components: plain PostgreSQL, OIDC-based auth and S3-compatible storage. The goal is to do this without a full rewrite of the app.";
 
 const problems = [
   {
-    title: "RLS is tied to Supabase",
-    body: "Policies call auth.uid(), auth.jwt() and auth.role(), which only exist in Supabase.",
+    title: "RLS is tied to the platform",
+    body: "On Supabase, policies call auth.uid(), auth.jwt() and auth.role(), which only exist in Supabase.",
   },
   {
-    title: "Users live in auth.users",
-    body: "Your tables reference their IDs, so you can't just recreate accounts somewhere else.",
+    title: "Users live in the platform's schema",
+    body: "Application tables reference IDs in auth.users, so accounts can't simply be recreated somewhere else.",
   },
   {
     title: "Storage rules are database policies",
@@ -24,101 +24,89 @@ const problems = [
   },
 ];
 
-const steps = [
-  {
-    name: "Inventory",
-    body: "Scans the project and lists what has to move.",
-  },
-  {
-    name: "Auth",
-    body: "Moves users, identities and bcrypt hashes and keeps the user IDs, so nobody has to reset a password.",
-  },
-  {
-    name: "RLS",
-    body: "Rewrites Supabase-specific policies into plain SQL using a small shim schema. Whatever it can't convert goes into the report.",
-  },
-  {
-    name: "Storage",
-    body: "Copies buckets and objects and translates the access rules.",
-  },
-  {
-    name: "Verify",
-    body: "Compares source and target: row counts, logins, and RLS checks that should be denied.",
-  },
+const mappings = [
+  { from: "Supabase Postgres", to: "PostgreSQL", note: "Schema, data and RLS policies" },
+  { from: "Supabase Auth", to: "OIDC provider", note: "Keycloak, Authentik, Zitadel" },
+  { from: "Supabase Storage", to: "S3-compatible storage", note: "MinIO, Garage, Ceph" },
 ];
 
-const guarantees = [
-  "It never writes to your Supabase project.",
-  "You can run it against a copy as many times as you want before the real cutover.",
-  "Every change it makes ends up in the report.",
-  "Sources are adapters, so Firebase or Appwrite can be added later.",
+const components = [
+  {
+    name: "Schema, data and RLS exporter",
+    body: "Exports schema and data to plain PostgreSQL. RLS policies that use Supabase-specific functions are rewritten against a small shim schema; anything that can't be converted is listed in the report.",
+  },
+  {
+    name: "Auth migration",
+    body: "Moves users and identities to an OIDC provider (Keycloak, Authentik, Zitadel), keeping user IDs and existing password hashes where the provider supports it, so users don't have to reset their passwords.",
+  },
+  {
+    name: "Storage export",
+    body: "Copies buckets and objects to any S3-compatible backend (MinIO, Garage, Ceph) and translates the access rules.",
+  },
+  {
+    name: "Client compatibility shim",
+    body: "Lets an existing app keep running against the new components during migration, so client code can be ported step by step instead of all at once.",
+  },
+  {
+    name: "Source adapter interface",
+    body: "Separates platform-specific reading from the rest of the pipeline, so other platforms such as Firebase and Appwrite can be added as sources.",
+  },
 ];
 
 const roadmap = [
-  "Inventory CLI",
-  "Auth migration (Auth.js, Keycloak)",
-  "RLS translation",
-  "Storage migration",
-  "Verification, docs, packaging",
+  "Schema, data and RLS exporter → PostgreSQL",
+  "Auth migration → OIDC providers (Keycloak, Authentik, Zitadel)",
+  "Storage export → S3-compatible storage (MinIO, Garage, Ceph)",
+  "Client compatibility shim",
+  "Source adapter interface (Firebase, Appwrite and others later)",
 ];
+
+const h2 = "mb-6 text-[clamp(1.5rem,3vw,2rem)] font-bold";
+const section = "mx-auto mt-22 max-w-240 px-4";
 ---
 
-<Base
-  title="Unvendor: leave Supabase without losing anything"
-  description="Open source CLI that moves a Supabase project to plain PostgreSQL, Auth.js or Keycloak, and any S3-compatible store, keeping your users, data and access rules."
->
-  <header class="mx-auto flex max-w-240 items-center justify-between px-4 pt-6">
+<Base title="Unvendor: exit toolkit for Backend-as-a-Service platforms" description={`${tagline} ${summary}`}>
+  <a
+    class="sr-only rounded-lg bg-text px-4 py-2 text-bg focus:not-sr-only focus:absolute focus:top-4 focus:left-4"
+    href="#main">Skip to content</a
+  >
+
+  <header class="mx-auto flex max-w-240 items-center justify-between gap-4 px-4 pt-6">
     <a class="font-mono text-lg font-bold text-text no-underline" href="/">unvendor</a>
-    <a class="text-muted no-underline hover:text-text" href={repo}>GitHub</a>
+    <nav aria-label="Source repositories">
+      <ul class="flex gap-4">
+        <li><a class="text-muted no-underline hover:text-text" href={github}>GitHub</a></li>
+        <li><a class="text-muted no-underline hover:text-text" href={codeberg}>Codeberg</a></li>
+      </ul>
+    </nav>
   </header>
 
-  <main>
-    <section class="mx-auto mt-18 max-w-240 px-4">
+  <main id="main">
+    <section class="mx-auto mt-18 max-w-240 px-4" aria-labelledby="hero-title">
       <p class="inline-block rounded-full bg-accent-soft px-2.5 py-1 font-mono text-[0.8rem] text-accent">
-        Early development · nothing works yet
+        Status: early development · no component is usable yet
       </p>
-      <h1 class="my-4 max-w-[20ch] text-[clamp(2rem,5vw,3.25rem)] font-bold">
-        Leave your Backend-as-a-Service without losing your users, data or access rules.
-      </h1>
-      <p class="max-w-[52ch] text-xl text-muted">
-        Unvendor is an open source CLI that moves a <a href="https://supabase.com">Supabase</a> project
-        onto infrastructure you control, one piece at a time.
-      </p>
-      <div class="mt-8 mb-12 flex flex-wrap gap-3">
+      <h1 id="hero-title" class="my-4 max-w-[24ch] text-[clamp(2rem,5vw,3.25rem)] font-bold">{tagline}</h1>
+      <p class="max-w-[60ch] text-xl text-muted">{summary}</p>
+      <div class="mt-8 flex flex-wrap gap-3">
         <a
           class="rounded-lg border border-text bg-text px-4.5 py-2.5 font-medium text-bg no-underline hover:opacity-90"
-          href={repo}>Star on GitHub</a
+          href={github}>Source on GitHub</a
         >
         <a
           class="rounded-lg border border-border px-4.5 py-2.5 font-medium text-text no-underline hover:border-muted"
-          href="#roadmap">See the roadmap</a
+          href={codeberg}>Mirror on Codeberg</a
         >
       </div>
-
-      <ul class="divide-y divide-border rounded-xl border border-border bg-surface font-mono text-sm">
-        {
-          targets.map((t) => (
-            <li class="grid gap-0.5 px-5 py-3.5 sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-4">
-              <span class="text-muted">{t.from}</span>
-              <span class="hidden text-accent sm:inline" aria-hidden="true">
-                →
-              </span>
-              <span class="text-accent">
-                <span class="sm:hidden" aria-hidden="true">
-                  →{" "}
-                </span>
-                {t.to}
-              </span>
-            </li>
-          ))
-        }
-      </ul>
     </section>
 
-    <section class="mx-auto mt-22 max-w-240 px-4">
-      <h2 class="mb-6 text-[clamp(1.5rem,3vw,2rem)] font-bold">
-        Getting into Supabase is easy. Getting out is not.
-      </h2>
+    <section class={section} aria-labelledby="problem">
+      <h2 id="problem" class={h2}>The problem</h2>
+      <p class="mb-6 max-w-[70ch]">
+        Backend-as-a-Service platforms (Supabase, Firebase, Appwrite, Nhost, PocketBase) bundle database,
+        auth, storage and functions behind platform-specific APIs. Apps built on them become hard to
+        self-host, migrate or audit, even when parts of the platform are open source.
+      </p>
       <div class="mb-6 grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
         {
           problems.map((p) => (
@@ -129,59 +117,67 @@ const roadmap = [
           ))
         }
       </div>
-      <p class="text-muted">
-        Right now leaving means a dump, some one-off scripts and rewriting access control by hand.
-        Unvendor turns that into something you can run and check.
+      <p class="max-w-[70ch] text-muted">
+        Today, leaving means a dump, one-off scripts and rewriting access control by hand. Self-hosting
+        the platform itself changes where it runs, not what the app depends on.
       </p>
     </section>
 
-    <section class="mx-auto mt-22 max-w-240 px-4">
-      <h2 class="mb-6 text-[clamp(1.5rem,3vw,2rem)] font-bold">What it does</h2>
-      <ol class="grid gap-6">
+    <section class={section} aria-labelledby="how">
+      <h2 id="how" class={h2}>How it works</h2>
+      <p class="mb-6 max-w-[70ch]">
+        Each part of the platform moves onto a standard replacement that can be swapped independently.
+        Supabase is the first source platform and the reference implementation; others are planned through
+        a source adapter interface.
+      </p>
+      <ul class="grid gap-4 md:grid-cols-3">
         {
-          steps.map((s, i) => (
-            <li class="flex gap-4">
-              <span class="grid size-8 flex-none place-items-center rounded-full bg-accent-soft font-mono text-sm text-accent">
-                {i + 1}
+          mappings.map((m) => (
+            <li class="flex flex-col rounded-xl border border-border bg-surface p-5 font-mono text-sm">
+              <span class="text-muted">{m.from}</span>
+              <span class="my-2 text-accent" aria-hidden="true">
+                ↓
               </span>
-              <div>
-                <h3 class="mb-1.5 text-lg font-semibold">{s.name}</h3>
-                <p class="text-muted">{s.body}</p>
-              </div>
-            </li>
-          ))
-        }
-      </ol>
-    </section>
-
-    <section class="mx-auto mt-22 max-w-240 px-4">
-      <h2 class="mb-6 text-[clamp(1.5rem,3vw,2rem)] font-bold">How it will work</h2>
-      <pre
-        class="mb-8 overflow-x-auto rounded-xl border border-border bg-terminal p-5 font-mono text-sm leading-[1.8] text-terminal-text"><code><span class="text-prompt select-none">$</span> npx unvendor inventory --source "$SUPABASE_DB_URL"
-<span class="text-prompt select-none">$</span> npx unvendor migrate auth --target keycloak
-<span class="text-prompt select-none">$</span> npx unvendor verify</code></pre>
-      <ul class="grid gap-2.5">
-        {
-          guarantees.map((g) => (
-            <li class="relative pl-7 before:absolute before:left-0 before:font-bold before:text-accent before:content-['✓']">
-              {g}
+              <span class="sr-only">moves to</span>
+              <span class="text-base font-semibold text-accent">{m.to}</span>
+              <span class="mt-2 font-sans text-muted">{m.note}</span>
             </li>
           ))
         }
       </ul>
     </section>
 
-    <section class="mx-auto mt-22 max-w-240 px-4">
-      <h2 class="mb-6 text-[clamp(1.5rem,3vw,2rem)] font-bold">Why not self-host Supabase?</h2>
-      <p>
-        That changes where Supabase runs, not what you depend on. You still run its services and stay
-        on its schemas. Unvendor is for moving onto plain Postgres, your own identity provider and any
-        S3 store, each replaceable on its own.
+    <section class={section} aria-labelledby="components">
+      <h2 id="components" class={h2}>Components</h2>
+      <ol class="grid gap-6">
+        {
+          components.map((c, i) => (
+            <li class="flex gap-4">
+              <span class="grid size-8 flex-none place-items-center rounded-full bg-accent-soft font-mono text-sm text-accent">
+                {i + 1}
+              </span>
+              <div>
+                <h3 class="mb-1.5 flex flex-wrap items-center gap-2 text-lg font-semibold">
+                  {c.name}
+                  <span class="rounded-full border border-border px-2 py-0.5 font-mono text-xs font-normal text-muted">
+                    Planned
+                  </span>
+                </h3>
+                <p class="text-muted">{c.body}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+      <p class="mt-8 max-w-[70ch] text-muted">
+        What exists today is a Supabase test fixture: tables with RLS policies, storage buckets with
+        per-user folder policies, and a seed script. It is the source project used to develop and test
+        the components.
       </p>
     </section>
 
-    <section class="mx-auto mt-22 max-w-240 px-4" id="roadmap">
-      <h2 class="mb-6 text-[clamp(1.5rem,3vw,2rem)] font-bold">Roadmap</h2>
+    <section class={section} aria-labelledby="roadmap">
+      <h2 id="roadmap" class={h2}>Roadmap</h2>
       <ol class="border-l-2 border-border">
         {
           roadmap.map((r, i) => (
@@ -194,20 +190,25 @@ const roadmap = [
       </ol>
     </section>
 
-    <section class="mx-4 mt-22 rounded-2xl border border-border bg-surface px-6 py-10 text-center lg:mx-auto lg:max-w-232">
-      <h2 class="mb-6 text-[clamp(1.5rem,3vw,2rem)] font-bold">Moved off Supabase, or tried and gave up?</h2>
-      <p class="mb-4 text-muted">
-        Open an issue and describe what broke. That's the most useful thing you can do right now.
+    <section class={section} aria-labelledby="open-source">
+      <h2 id="open-source" class={h2}>Open source</h2>
+      <p class="mb-4 max-w-[70ch]">
+        Unvendor is written in TypeScript and licensed under Apache-2.0. It is meant for teams that need to
+        run their backend on infrastructure they control: small teams, NGOs, public bodies, and anyone who
+        needs data sovereignty, GDPR-compliant self-hosting, or protection against pricing or platform
+        changes.
       </p>
-      <a
-        class="inline-block rounded-lg border border-text bg-text px-4.5 py-2.5 font-medium text-bg no-underline hover:opacity-90"
-        href={`${repo}/issues/new`}>Open an issue</a
-      >
+      <p class="max-w-[70ch] text-muted">
+        If you've moved off a Backend-as-a-Service platform, or tried and gave up,
+        <a href={`${github}/issues/new`}>open an issue</a> and describe what broke.
+      </p>
     </section>
   </main>
 
   <footer class="mx-auto mt-22 max-w-240 border-t border-border px-4 pt-6 pb-12 text-muted">
-    <p class="mb-1">Apache-2.0 · <a href={repo}>Source</a></p>
-    <p class="text-sm">Unvendor is not affiliated with or endorsed by Supabase.</p>
+    <p class="mb-1">
+      Apache-2.0 · <a href={github}>GitHub</a> · <a href={codeberg}>Codeberg</a>
+    </p>
+    <p class="text-sm">Unvendor is not affiliated with or endorsed by Supabase or any other platform mentioned here.</p>
   </footer>
 </Base>
